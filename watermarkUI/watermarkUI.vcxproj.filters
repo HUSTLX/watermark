@@ -21,9 +21,6 @@
     <ClInclude Include="DCT.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="sift.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="MyForm2.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -36,9 +33,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyForm.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="sift.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DCT.cpp">

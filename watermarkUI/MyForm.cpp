@@ -19,7 +19,7 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 	watermarkUI::MyForm2^ progressForm = gcnew watermarkUI::MyForm2();
 	progressForm->Show();
 	threshold(watermark_img, watermark_img, 240, 255, CV_THRESH_BINARY_INV);
-	Arnold(watermark_img, 5);
+	//Arnold(watermark_img, 5);
 	//std::cout << inputfile << std::endl;
 	FILE *f = NULL;
 	const char * filename = outputfile.c_str();
@@ -71,13 +71,13 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 			char name[100];
 			//sprintf(name, "./res/photo/%dnext.jpg", vedio.fnumber);
 			//imwrite(name, next_frame);
-			sprintf(name, "./res/photo/%dcur.jpg", vedio.fnumber);
+			sprintf(name, "./res/photo/%dcur.bmp", vedio.fnumber);
 			imwrite(name, cur_frame);
 			vedio.embed(cur_frame, watermark_img,psnr);
 			PSNR_text->ReadOnly = true;
 			sprintf_s(name, "%f", psnr);
 			PSNR_text->Text= System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)name);
-			sprintf(name, "./res/photo/%dembed.jpg", vedio.fnumber);
+			sprintf(name, "./res/photo/%dembed.bmp", vedio.fnumber);
 			imwrite(name, cur_frame);
 		}
 		// increment frame number
@@ -130,7 +130,7 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
 	vector<vector<int>> watermark_accumulation(64, final_watermark_row);
 	cv::Mat watermark_img = cv::imread(static_cast<const char*>(Marshal::StringToHGlobalAnsi(embeddedwatermark_text->Text).ToPointer()),0);
 	threshold(watermark_img, watermark_img, 240, 255, CV_THRESH_BINARY);
-	Arnold(watermark_img, 5);
+	//Arnold(watermark_img, 5);
 	cv::Mat watermark;
 	cv::Mat output_frame;
 	// current frame
@@ -175,17 +175,25 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
 			//imwrite(name, next_frame);
 			//sprintf(name, "./res/photo/%dcur.jpg", vedio.fnumber);
 			//imwrite(name, cur_frame);
+            cv::Mat channels[3];
+            // 把一个3通道图像转换成3个单通道图像  
+            split(output_frame, channels);//分离色彩通道  
+            cv::Mat image = channels[0].clone();
+            threshold(image, image, 5, 255, CV_THRESH_BINARY_INV);
+            //imshow("image", image);
+            sprintf(name, "./res/detect/%diff.bmp", vedio.fnumber);
+            imwrite(name, image);
 			watermark = watermark_img.clone();
-			vedio.detect(output_frame,watermark,nc);
+			vedio.detect(image,watermark,nc);
 			cv::Scalar val = getMSSIM(watermark, watermark_img);
 			cout << val[0] <<"\t"<< val[1] << "\t" << val[2] << "\t" << val[3] << endl;
-			Reverse_Arnold(watermark, 5);
+			//Reverse_Arnold(watermark, 5);
 			outfile << vedio.fnumber << "\t" << "frame" << "\t" << nc << std::endl;
 			nc_text->ReadOnly = true;
 			sprintf_s(name, "%.4f", val[0]);
 			nc_text->Text = System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)name);
-			sprintf(name, "./res/detect/%dd%.4f.jpg", vedio.fnumber,nc);
-			imwrite(name, watermark);
+			//sprintf(name, "./res/detect/%dd%.4f.bmp", vedio.fnumber,nc);
+			//imwrite(name, watermark);
 			detect_watermark->Image = gcnew System::Drawing::Bitmap(watermark.cols, watermark.rows, watermark.step, System::Drawing::Imaging::PixelFormat::Format8bppIndexed, (System::IntPtr)watermark.ptr());
 			detect_watermark->Refresh();
 			vedio.extractFinalWatermark(watermark, watermark_accumulation);

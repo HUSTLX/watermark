@@ -7,10 +7,12 @@
 #include <string>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
 #include <random>
 #include <stdlib.h>
 #include <time.h>
 #define EMBED_STRENGTH 30
+#define EMBED_RATE 10
 void Arnold(cv::Mat& src, int times);
 void Reverse_Arnold(cv::Mat& src, int times);
 void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr);

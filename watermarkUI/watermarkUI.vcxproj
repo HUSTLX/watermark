@@ -79,6 +79,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>D:\opencv3.1.0\opencv\build\include\opencv2;D:\opencv3.1.0\opencv\build\include\opencv;D:\opencv3.1.0\opencv\build\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\opencv3.1.0\opencv\build\x64\vc14\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -108,10 +110,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\yckj\Documents\Visual Studio 2015\Projects\watermark\watermarkUI\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies />
+      <AdditionalDependencies>opencv_world310.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\yckj\Documents\Visual Studio 2015\Projects\watermark\watermarkUI\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -151,14 +155,12 @@
     <ClInclude Include="MyForm2.h">
       <FileType>CppForm</FileType>
     </ClInclude>
-    <ClInclude Include="sift.h" />
     <ClInclude Include="videowatermark.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Arnold.cpp" />
     <ClCompile Include="DCT.cpp" />
     <ClCompile Include="MyForm.cpp" />
-    <ClCompile Include="sift.cpp" />
     <ClCompile Include="videowatermark.cpp" />
   </ItemGroup>
   <ItemGroup>

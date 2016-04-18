@@ -48,7 +48,7 @@ void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr
 {
     int image_height = image.rows * 7 / 9;
 	int image_width = image.cols * 7 / 9;
-	const int kEmbedNumPerBlock = image_height * image_width / (64 * 64 * 5);
+	const int kEmbedNumPerBlock = image_height * image_width / (64 * 64 * EMBED_RATE);
 	int watermark_height = watermark.rows;
 	int watermark_width = watermark.cols;
 	double step_height = static_cast<double>(image_height) / watermark_height;
@@ -90,39 +90,49 @@ void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr
 	psnr = 20 * log10(255/sqrt(mes));
 	//std::cout << embed_count << std::endl;
 }
-void ArnoldDetectWatermark(cv::Mat& src, cv::Mat& detect_watermark, double &nc)
+void ArnoldDetectWatermark(cv::Mat& image, cv::Mat& detect_watermark, double &nc)
 {
     double sum1 = 0, sum2 = 0, sum3 = 0;
     cv::Mat watermark = detect_watermark.clone();
-    cv::Mat channels[3];
-    // 把一个3通道图像转换成3个单通道图像  
-    split(src, channels);//分离色彩通道  
-    cv::mean(channels[1]);
-    cv::Mat image = channels[0].clone();
-    threshold(image, image, 5, 255, CV_THRESH_BINARY_INV);
-    //imshow("image", image);
-    imwrite("hei.jpg", image);
     std::vector<int> w_sum(image.cols);
     std::vector<int> h_sum(image.rows);
-    for (int x = 0; x < image.cols; x++) {
-        for (int y = 0; y < image.rows; y++) {
-            if (image.at<uchar>(x, y) == 0)
+    //imshow("hei", image);
+    int height = image.rows;
+    int width = image.cols;
+    //投影法确定区域
+    /*for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            if (image.at<uchar>(y, x) == 0) {
                 w_sum[x]++;
+                h_sum[y]++;
+            }
         }
-        std::cout << x << "rows" << w_sum[x] << std::endl;
+        //std::cout << x << "cols" << w_sum[x] << std::endl;
     }
-    for (int x = 0; x < image.cols; x++) {
-        for (int y = 0; y < image.rows; y++) {
-            if (image.at<uchar>(x, y) == 0)
-                w_sum[x]++;
-        }
-        std::cout << x << "rows" << w_sum[x] << std::endl;
+    int mid_h = 0;
+    int mid_w = 0;
+    for (int y = height / 4; y < height * 3 / 4; y++) {
+        mid_h += h_sum[y];
     }
-    int image_height = src.rows;
-    int image_width = src.cols;
-    const int kEmbedNumPerBlock = image_height * image_width / (64 * 64 * 5);
-    double step_height = static_cast<double>(image_height) / 64;
-    double step_width = static_cast<double>(image_width) / 64;
+    mid_h = mid_h * 6 / (8 * height);
+    for (int x = width / 4; x < width * 3 / 4; x++) {
+        mid_w += w_sum[x];
+    }
+    mid_w = mid_w * 6 / (8 * width);
+    int up = 0;
+    int below = height - 1;
+    int left = 0;
+    int right = width - 1;
+    while (h_sum[up] < mid_h) up++;
+    while (h_sum[below] < mid_h) below--;
+    while (w_sum[left] < mid_w) left++;
+    while (w_sum[right] < mid_w) right--;
+    int watermark_width = right-left;
+    int watermark_height = below-up;*/
+
+    const int kEmbedNumPerBlock = height * width / (64 * 64 * EMBED_RATE);
+    double step_height = static_cast<double>(height) / 64;
+    double step_width = static_cast<double>(width) / 64;
     int block_height = floor(step_height);
     int block_width = floor(step_width);
     for (int i = 0; i < 64; i++)
@@ -131,7 +141,7 @@ void ArnoldDetectWatermark(cv::Mat& src, cv::Mat& detect_watermark, double &nc)
         {
             cv::Rect rect(floor(j*step_width), floor(i*step_height), block_width, block_height);
             cv::Mat roi = image(rect);
-            int embeded_count = 0;
+            int embeded_count = 0; 
             for (int x = 0; x < block_height; x++)
             {
                 for (int y = 0; y < block_width; y++)
@@ -156,88 +166,4 @@ void ArnoldDetectWatermark(cv::Mat& src, cv::Mat& detect_watermark, double &nc)
     }
     
     nc = sum1 / (sum2 + 64 * 64);
-}
-/**************************************************************************************
-函数名：Projection
-功  能：投影法找出矩形区域
-输  入： 目标图像des,  原图像 src,图像宽width, 高height
-返回值：no
-**************************************************************************************/
-void Projection(unsigned char* des, const unsigned char* src, int width, int height)
-{
-    int* h_sum = new int[height];
-    int* w_sum = new int[width];
-    int up = 0;
-    int below = height;
-    int left = 0;
-    int right = width;
-    for (int y = 0; y<height; y++)
-    {
-        for (int x = 0; x<width; x++)
-        {
-            des[y*width + x] = 255;
-        }
-    }
-    for (int y = 0; y<height; y++)
-    {
-        h_sum[y] = 0;
-        for (int x = 0; x<width; x++)
-        {
-            //printf("src %d",src[y*width+x]);
-            h_sum[y] = h_sum[y] + src[y*width + x];
-        }
-        //printf("%d行%d ",y,h_sum[y]);
-    }
-    for (int y = height / 2; y<height; y++)
-    {
-
-        if ((h_sum[y] - h_sum[height / 2])>255 * 60)
-        {
-            below = y;
-            break;
-        }
-    }
-    for (int y = height / 2; y>0; y--)
-    {
-        if ((h_sum[y] - h_sum[height / 2])>255 * 60)
-        {
-            up = y;
-            break;
-        }
-    }
-    for (int x = 0; x<width; x++)
-    {
-        w_sum[x] = 0;
-        for (int y = up; y<below; y++)
-        {
-            w_sum[x] = w_sum[x] + src[y*width + x];
-        }
-        //printf("%d列%d ",x,w_sum[x]);
-    }
-    int max_r = 0;
-    int max_l = 0;
-    for (int x = width / 2 + 100; x<width; x++)
-    {
-        if (w_sum[x]>max_r)
-        {
-            right = x;
-            max_r = w_sum[x];
-        }
-    }
-    for (int x = width / 2 - 100; x>0; x--)
-    {
-        if (w_sum[x]>max_l)
-        {
-            left = x;
-            max_l = w_sum[x];
-        }
-    }
-    for (int y = up; y<below; y++)
-    {
-        for (int x = left; x<right; x++)
-        {
-            des[y*width + x] = 0;
-        }
-    }
-    printf("up%d below%d left%d right%d", up, below, left, right);
 }

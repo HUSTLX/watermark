@@ -11,7 +11,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
-#include <opencv2/nonfree/nonfree.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 extern "C"
 {
@@ -21,21 +20,20 @@ extern "C"
 #include "include\libavutil\common.h"
 #include "include\libavutil\imgutils.h"
 #include "include\libswscale\swscale.h" 
-#include "include\x264.h"
 #include "include\libavutil\imgutils.h"    
 #include "include\libavutil\opt.h"       
 #include "include\libavutil\mathematics.h"    
 #include "include\libavutil\samplefmt.h" 
 };
-
-
 #pragma comment(lib, "avcodec.lib")
 #pragma comment(lib, "avformat.lib")
 #pragma comment(lib, "avdevice.lib")
 #pragma comment(lib, "avfilter.lib")
+#pragma comment(lib, "avutil.lib")
 #pragma comment(lib, "postproc.lib")
 #pragma comment(lib, "swresample.lib")
 #pragma comment(lib, "swscale.lib")
+
 #include "Arnold.h"
 // The frame processor interface
 class FrameProcessor {
@@ -244,13 +242,13 @@ class VideoWatermark {
 	  void displayInput(std::string wn) {
 		  windowNameInput= wn;
 		  cv::namedWindow(windowNameInput, cv::WINDOW_NORMAL);
-		  cv::resizeWindow(windowNameInput, 960, 720);
+		  cv::resizeWindow(windowNameInput, 920, 720);
 	  }
 	  // to display the processed frames
 	  void displayOutput(std::string wn) {
 		  windowNameOutput = wn;
 		  cv::namedWindow(windowNameOutput, cv::WINDOW_NORMAL);
-		  cv::resizeWindow(windowNameOutput, 960, 720);
+		  cv::resizeWindow(windowNameOutput, 920, 720);
 	  }
 	  // do not display the processed frames
 	  void dontDisplay() {

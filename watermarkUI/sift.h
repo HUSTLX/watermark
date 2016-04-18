@@ -1,8 +1,7 @@
 #ifndef SIFT_H_
 #define SIFT_H_
 #include <opencv2/opencv.hpp>
-#include <opencv2/nonfree/nonfree.hpp>
-#include <opencv2/nonfree/features2d.hpp>
+
 #include <math.h>
 #include <iostream>
 #include <iomanip>

@@ -50,7 +50,7 @@ void VideoWatermark::ffmpegEncoderInit()
 		NULL };
 	CodecID codec_id = av_codec_get_id(fallback_tags, MKTAG(codec[0], codec[1], codec[2], codec[3]));
 	std::cout << "codec_id" << codec_id << codec[0] << codec[1] << codec[2] << codec[3] << std::endl;*/
-	CodecID codec_id = AV_CODEC_ID_H264;
+	AVCodecID codec_id = AV_CODEC_ID_H264;
 	pcodec = avcodec_find_encoder(AV_CODEC_ID_H264);//查找h264编码器  
 	if (!pcodec)
 	{
@@ -72,7 +72,7 @@ void VideoWatermark::ffmpegEncoderInit()
 	c->time_base.num = 1;
 	c->gop_size = 15; //设置GOP大小,该值表示每10帧会插入一个I帧  
 	c->max_b_frames = 1;//设置B帧最大数,该值表示在两个非B帧之间，所允许插入的B帧的最大帧数  
-	c->pix_fmt = PIX_FMT_YUV420P;//设置像素格式  
+	c->pix_fmt = AV_PIX_FMT_YUV420P;//设置像素格式  
 	if (codec_id == AV_CODEC_ID_H264) {
 		//av_opt_set(c->priv_data, "preset", "slow", 0);
 		av_opt_set(c->priv_data, "tune", "zerolatency", 0);//设置编码器的延时，解决前面的几十帧不出数据的情况  
@@ -87,7 +87,7 @@ void VideoWatermark::ffmpegEncoderInit()
 	rgb_buff = new uint8_t[nDataLen];//初始化数据区，为rgb图像帧准备填充缓存  
 	outbuf_size = 100000;////初始化编码输出数据区  
 	outbuf = new uint8_t[outbuf_size];
-	scxt = sws_getContext(c->width, c->height, PIX_FMT_BGR24, c->width, c->height, PIX_FMT_YUV420P, SWS_POINT, NULL, NULL, NULL);//初始化格式转换函数  
+	scxt = sws_getContext(c->width, c->height, AV_PIX_FMT_BGR24, c->width, c->height, AV_PIX_FMT_YUV420P, SWS_POINT, NULL, NULL, NULL);//初始化格式转换函数  
 	std::cout << "encoder init done!" << std::endl;
 }
 void VideoWatermark::ffmpegEncoderEncode(FILE *file, uint8_t *data, long fnumber)
@@ -96,8 +96,8 @@ void VideoWatermark::ffmpegEncoderEncode(FILE *file, uint8_t *data, long fnumber
 	memset(&pkt, 0, sizeof(AVPacket));
 	av_init_packet(&pkt);
 	memcpy(rgb_buff, data, nDataLen);//拷贝图像数据到rgb图像帧缓存中准备处理  
-	avpicture_fill((AVPicture*)m_pRGBFrame, (uint8_t*)rgb_buff, PIX_FMT_RGB24, encode_width, encode_height);//将rgb_buff填充到m_pRGBFrame  
-	avpicture_fill((AVPicture*)m_pYUVFrame, (uint8_t*)yuv_buff, PIX_FMT_YUV420P, encode_width, encode_height);//将yuv_buff填充到m_pYUVFrame  
+	avpicture_fill((AVPicture*)m_pRGBFrame, (uint8_t*)rgb_buff, AV_PIX_FMT_RGB24, encode_width, encode_height);//将rgb_buff填充到m_pRGBFrame  
+	avpicture_fill((AVPicture*)m_pYUVFrame, (uint8_t*)yuv_buff, AV_PIX_FMT_YUV420P, encode_width, encode_height);//将yuv_buff填充到m_pYUVFrame  
 	sws_scale(scxt, m_pRGBFrame->data, m_pRGBFrame->linesize, 0, c->height, m_pYUVFrame->data, m_pYUVFrame->linesize);// 将RGB转化为YUV  
 	int myoutputlen = 0;
 	int returnvalue = avcodec_encode_video2(c, &pkt, m_pYUVFrame, &myoutputlen);
