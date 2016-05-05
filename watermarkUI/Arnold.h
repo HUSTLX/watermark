@@ -11,8 +11,8 @@
 #include <random>
 #include <stdlib.h>
 #include <time.h>
-#define EMBED_STRENGTH 30
-#define EMBED_RATE 10
+#define EMBED_STRENGTH 40
+#define EMBED_RATE 5
 void Arnold(cv::Mat& src, int times);
 void Reverse_Arnold(cv::Mat& src, int times);
 void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr);
