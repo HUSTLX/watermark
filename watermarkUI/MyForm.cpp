@@ -29,23 +29,29 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 	//vedio.setInput("./res/test1.h264");
 	// Get basic info about video file
 	long tatal_frame = vedio.getTotalFrameCount();
+    int frame_rate = vedio.getFrameRate();
 	vedio.displayInput("Current Frame");
 	vedio.displayOutput("watermark Frame");
 	vedio.setDelay(1000. / vedio.getFrameRate());// Play the video at the original frame rate
 	vedio.ffmpegEncoderInit();//初始化编码器  
 	cv::Mat output_frame;
+    // previous first frame
+    cv::Mat pre_first;	
+    // previous second frame
+    cv::Mat pre_second;
+    // previous frame
+    cv::Mat pre_frame;
 	// current frame
 	cv::Mat cur_frame;
-	// previous frame
-	cv::Mat pre_frame;
 	// next frame
 	cv::Mat next_frame;
     char name[100];
-    //int interval = 20;   //the embeded frames'interval not less than 20;
 	if (!vedio.isOpened())
 		return;
 	vedio.stop = false;
-	vedio.readNextFrame(pre_frame); //read the first frame
+	vedio.readNextFrame(pre_first); //read the first frame
+    vedio.readNextFrame(pre_second); //read the second frame
+    vedio.readNextFrame(pre_frame); //read the third frame
 	IplImage* img = &IplImage(pre_frame);
 	vedio.ffmpegEncoderEncode(f, (uchar*)img->imageData, 1);//编码第一帧
 	vedio.readNextFrame(cur_frame); //read the first frame
@@ -115,12 +121,15 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 	fwrite(endcode, 1, sizeof(endcode), f); //add sequence end code to have a real mpeg file 
 	fclose(f);
 	vedio.ffmpegEncoderClose();
-    string temp = "ffmpeg -i " + inputfile + " -vn -acodec pcm_s16le temp.wav";
-    system(temp.c_str());    //
-    temp = "ffmpeg -i temp.h264 -i temp.wav -vcodec copy -acodec copy " + outputfile;
-    system(temp.c_str());
-    //system("del temp.h264");
-    system("del temp.wav");
+    if (vedio.getFrameNumber() == vedio.frameToStop) {
+        string temp = "ffmpeg -i " + inputfile + " -vn -acodec pcm_s16le temp.wav";
+        system(temp.c_str());    //
+        temp = "ffmpeg -i temp.h264 -i temp.wav -vcodec copy -acodec copy " + outputfile;
+        system(temp.c_str());
+        //system("del temp.h264");
+        system("del temp.wav");
+    }
+    
 	progressForm->Close();
 	std::cout << vedio.getFrameNumber() << std::endl;
 	std::cout << vedio.getPositionMS() << std::endl;
@@ -135,29 +144,40 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
 	vedio.setInput(inputfile);
 	//vedio.setInput("./res/test1.h264");
 	long tatal_frame = vedio.getTotalFrameCount();
+    int frame_rate = vedio.getFrameRate();
 	vedio.displayInput("Current Frame");
 	vedio.setDelay(1000. / vedio.getFrameRate());// Play the video at the original frame rate
-	vector<int> final_watermark_row(64, 0);
-	vector<vector<int>> watermark_accumulation(64, final_watermark_row);
+	vector<vector<int>> watermark_accumulation(64, vector<int>(64,0));
     string watermark_path = static_cast<const char*>(Marshal::StringToHGlobalAnsi(embeddedwatermark_text->Text).ToPointer());
     cv::Mat watermark_img(64,64, CV_8UC1,255);
     if (watermark_path != "") {
         watermark_img = cv::imread(watermark_path, 0);
         threshold(watermark_img, watermark_img, 240, 255, CV_THRESH_BINARY);
     }   
+    // Tesseract OCR API
+    tesseract::TessBaseAPI tess;
+    printf("Tesseract-ocr version: %s\n", tess.Version());
+    tess.Init(NULL, "eng", tesseract::OEM_DEFAULT);
+    tess.SetPageSegMode(tesseract::PSM_SINGLE_BLOCK);
 	//Arnold(watermark_img, 5);
 	cv::Mat watermark;
 	cv::Mat output_frame;
+    // previous first frame
+    cv::Mat pre_first;
+    // previous second frame
+    cv::Mat pre_second;
+    // previous frame
+    cv::Mat pre_frame;
 	// current frame
 	cv::Mat cur_frame;
-	// previous frame
-	cv::Mat pre_frame;
 	// next frame
 	cv::Mat next_frame;
 	if (!vedio.isOpened())
 		return;
 	vedio.stop = false;
-	vedio.readNextFrame(pre_frame); //read the first frame
+    vedio.readNextFrame(pre_first); //read the first frame
+    vedio.readNextFrame(pre_second); //read the second frame
+	vedio.readNextFrame(pre_frame); //read the third frame
 	IplImage* img = &IplImage(pre_frame);
 	vedio.readNextFrame(cur_frame); //read the first frame
 	vedio.fnumber = 1;
@@ -177,17 +197,21 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
 		if (vedio.windowNameInput.length() != 0)
 			cv::imshow(vedio.windowNameInput, next_frame);
 		// calling the process function or method
-		if (next_shotDiff.val[0] - pre_shotDiff.val[0]>0.6)
+		if (next_shotDiff.val[0] - pre_shotDiff.val[0]>1)
 		{
 			double nc = 0;
-			absdiff(pre_frame, cur_frame, output_frame);
+            if(frame_rate>47)
+			    absdiff(pre_second, cur_frame, output_frame);
+            else absdiff(pre_frame, cur_frame, output_frame);
 			//cur_frame = pre_frame.clone();
 			progressForm->progressBar1->Value = double(vedio.fnumber) * 100 / tatal_frame;
 			progressForm->progresslabel->Text = (double(vedio.fnumber) * 100 / tatal_frame).ToString("0.00") + "%";
 			std::cout << vedio.fnumber << "帧" << next_shotDiff.val[0] << "前一帧" << pre_shotDiff.val[0] << std::endl;
 			char name[100];
-			//sprintf(name, "./res/photo/%dnext.jpg", vedio.fnumber);
-			//imwrite(name, next_frame);
+            //sprintf(name, "./res/photo/%dpre.jpg", vedio.fnumber);
+            //imwrite(name, pre_frame);
+			//sprintf(name, "./res/photo/%dsecond.jpg", vedio.fnumber);
+			//imwrite(name, pre_second);
 			//sprintf(name, "./res/photo/%dcur.jpg", vedio.fnumber);
 			//imwrite(name, cur_frame);
             cv::Mat channels[3];
@@ -210,21 +234,39 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
                 sprintf_s(name, "%.4f", val[0]);
                 nc_text->Text = System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)name);
             }
-			
 			//Reverse_Arnold(watermark, 5);
-			
 			//sprintf(name, "./res/detect/%dd%.4f.bmp", vedio.fnumber,nc);
 			//imwrite(name, watermark);
 			detect_watermark->Image = gcnew System::Drawing::Bitmap(watermark.cols, watermark.rows, watermark.step, System::Drawing::Imaging::PixelFormat::Format8bppIndexed, (System::IntPtr)watermark.ptr());
 			detect_watermark->Refresh();
-			vedio.extractFinalWatermark(watermark, watermark_accumulation);
-			final_watermark->Image = gcnew System::Drawing::Bitmap(watermark.cols, watermark.rows, watermark.step, System::Drawing::Imaging::PixelFormat::Format8bppIndexed, (System::IntPtr)watermark.ptr());
-			final_watermark->Refresh();
+            tess.SetImage((uchar*)watermark.data, watermark.cols, watermark.rows, 1, watermark.cols);
+            // Get the text   
+            std::string outText = tess.GetUTF8Text();  
+            std::cout << outText << std::endl;
+            bool flag = true;
+            for (auto c : outText) {
+                if (c<=0||127<=c) {
+                    flag = false;
+                    break;
+                }
+            }
+            if (1) {
+                std::cout << "Accept"<<outText << std::endl;
+                vedio.extractFinalWatermark(watermark, watermark_accumulation);
+                final_watermark->Image = gcnew System::Drawing::Bitmap(watermark.cols, watermark.rows, watermark.step, System::Drawing::Imaging::PixelFormat::Format8bppIndexed, (System::IntPtr)watermark.ptr());
+                final_watermark->Refresh();
+                tess.SetImage((uchar*)watermark.data, watermark.cols, watermark.rows, 1, watermark.cols);
+                // Get the text   
+                std::string outText = tess.GetUTF8Text();
+                std::cout <<"final:"<< outText << std::endl;
+            }
 		}
 		// increment frame number
 		vedio.fnumber++;
 		pre_shotDiff = next_shotDiff;
 		cur_hist = next_hist;
+        pre_first = pre_second.clone();
+        pre_second = pre_frame.clone();
 		pre_frame = cur_frame.clone();
 		cur_frame = next_frame.clone();
 		// introduce a delay
@@ -237,10 +279,14 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
 			progressForm->Close();
 			vedio.dontDisplay();
 			outfile.close();
+            tess.Clear();
+            tess.End();
 		}
 	}
 	outfile.close();
 	progressForm->Close();
+    tess.Clear();
+    tess.End();
 	std::cout << vedio.getFrameNumber() << std::endl;
 	std::cout << vedio.getPositionMS() << std::endl;
 }

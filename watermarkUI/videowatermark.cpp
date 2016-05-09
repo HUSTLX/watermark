@@ -129,18 +129,18 @@ void VideoWatermark::ffmpegEncoderClose()
 }
 void VideoWatermark::extractFinalWatermark(cv::Mat &watermark, std::vector<std::vector<int>> &watermark_accumulation)
 {
-	for (int y = 0; y != watermark.rows; y++) 
+	for (int y = 0; y < watermark.rows; y++) 
 	{
-		for (int x = 0; x != watermark.cols; x++)
+		for (int x = 0; x < watermark.cols; x++)
 		{
-			if (watermark.at<uchar>(x, y) > 0)
+			if (watermark.at<uchar>(y,x) > 0)
 				watermark_accumulation[x][y] -= 1;
 			else
 				watermark_accumulation[x][y] += 4;
 			if (watermark_accumulation[x][y] > 0)
-				watermark.at<uchar>(x, y) = 0;
+				watermark.at<uchar>(y, x) = 0;
 			else
-				watermark.at<uchar>(x, y) = 255;
+				watermark.at<uchar>(y, x) = 255;
 		}
 	}
 }

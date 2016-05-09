@@ -46,11 +46,12 @@ void Reverse_Arnold(cv::Mat& src, int times)
 }
 void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr)
 {
-    int image_height = image.rows * 7 / 9;
-	int image_width = image.cols * 7 / 9;
-	const int kEmbedNumPerBlock = image_height * image_width / (64 * 64 * EMBED_RATE);
+    int image_height = image.rows;
+	int image_width = image.cols;
+	
 	int watermark_height = watermark.rows;
 	int watermark_width = watermark.cols;
+    const int kEmbedNumPerBlock = image_height * image_width / (watermark_height * watermark_width * EMBED_RATE);
 	double step_height = static_cast<double>(image_height) / watermark_height;
 	double step_width = static_cast<double>(image_width) / watermark_width;
 	int block_height = floor(step_height);
@@ -69,7 +70,7 @@ void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr
 			if (watermark.at<uchar>(i, j) > 0)
 			{
 				embed_count += 1;
-                cv::Rect rect(floor(j*step_width + image.cols / 9), floor(i*step_height + image.rows / 9), block_width, block_height);
+                cv::Rect rect(floor(j*step_width), floor(i*step_height), block_width, block_height);
 				cv::Mat image_roi = image(rect);
 				for (int x = 0; x < kEmbedNumPerBlock; x++)
 				{
