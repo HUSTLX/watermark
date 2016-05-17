@@ -13,6 +13,8 @@
 #include <time.h>
 #define EMBED_STRENGTH 40
 #define EMBED_RATE 5
+#define WATERMARK_WIDTH 128
+#define WATERMARK_HEIGHT 64
 void Arnold(cv::Mat& src, int times);
 void Reverse_Arnold(cv::Mat& src, int times);
 void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr);

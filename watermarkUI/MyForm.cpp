@@ -14,7 +14,7 @@ int main()
 Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 	std::string inputfile = static_cast<const char*>(Marshal::StringToHGlobalAnsi(inputfiletext->Text).ToPointer());
 	std::string outputfile = static_cast<const char*>(Marshal::StringToHGlobalAnsi(outputfiletext->Text).ToPointer());
-	cv::Mat watermark_img = cv::imread(static_cast<const char*>(Marshal::StringToHGlobalAnsi(watermark_pic->ImageLocation).ToPointer()),0);
+	cv::Mat watermark_img = generateWatermark(static_cast<const char*>(Marshal::StringToHGlobalAnsi(watermark_text->Text).ToPointer()));
 	cout << "watermark_width" << watermark_img.cols << "watermark_height" << watermark_img.rows << endl;
 	watermarkUI::MyForm2^ progressForm = gcnew watermarkUI::MyForm2();
 	progressForm->Show();
@@ -52,7 +52,7 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 	vedio.readNextFrame(pre_first); //read the first frame
     vedio.readNextFrame(pre_second); //read the second frame
     vedio.readNextFrame(pre_frame); //read the third frame
-	IplImage* img = &IplImage(pre_frame);
+	IplImage* img = &IplImage(pre_first);
 	vedio.ffmpegEncoderEncode(f, (uchar*)img->imageData, 1);//编码第一帧
 	vedio.readNextFrame(cur_frame); //read the first frame
 	vedio.fnumber = 1;
@@ -70,12 +70,16 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 		cv::Scalar next_shotDiff = sum(next_histDiff);
         
 		// calling the process function or method
-		if (next_shotDiff.val[0] - pre_shotDiff.val[0]>0.6)
+		if (next_shotDiff.val[0] - pre_shotDiff.val[0]>1)
 		{
             //interval = 20;
             cout << next_shotDiff.val[0] - pre_shotDiff.val[0] << endl;
-			double psnr = 0;
-			cur_frame = pre_frame.clone();
+			double psnr = 0;	
+            if (frame_rate > 37) {
+                pre_second = pre_first.clone();
+                cur_frame = pre_first.clone();
+            }
+            else cur_frame = pre_frame.clone();
 			progressForm->progressBar1->Value = double(vedio.fnumber) * 100 / tatal_frame;
 			progressForm->progresslabel->Text = (double(vedio.fnumber) * 100 / tatal_frame).ToString("0.00")+"%";
 			std::cout << vedio.fnumber << "帧" << next_shotDiff.val[0] << "前一帧" << pre_shotDiff.val[0] << std::endl;
@@ -84,14 +88,13 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 			sprintf(name, "./res/photo/%dcur.bmp", vedio.fnumber);
 			imwrite(name, cur_frame);
 			vedio.embed(cur_frame, watermark_img,psnr);
+            if (frame_rate > 37) pre_frame = cur_frame.clone();
 			PSNR_text->ReadOnly = true;
 			sprintf_s(name, "%f", psnr);
 			PSNR_text->Text= System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)name);
 			sprintf(name, "./res/photo/%dembed.bmp", vedio.fnumber);
 			imwrite(name, cur_frame);
 		}
-        //else interval--;
-		// increment frame number
 		// display input frame
 		if (vedio.windowNameInput.length() != 0)
 			cv::imshow(vedio.windowNameInput, next_frame);
@@ -99,12 +102,14 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 			cv::imshow(vedio.windowNameOutput, cur_frame);
 		}
 		vedio.fnumber++;
-		IplImage* img = &IplImage(cur_frame);
+		IplImage* img = &IplImage(pre_second);
 		vedio.ffmpegEncoderEncode(f, (uchar*)img->imageData, vedio.fnumber);//编码  																  
-		pre_shotDiff = next_shotDiff;
-		cur_hist = next_hist;
-		pre_frame = cur_frame.clone();
-		cur_frame = next_frame.clone();
+        pre_shotDiff = next_shotDiff;
+        cur_hist = next_hist;
+        pre_first = pre_second.clone();
+        pre_second = pre_frame.clone();
+        pre_frame = cur_frame.clone();
+        cur_frame = next_frame.clone();
 		// introduce a delay
 		if (vedio.delay >= 0 && cv::waitKey(vedio.delay) >= 0)
 			vedio.stopIt();
@@ -121,7 +126,7 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
 	fwrite(endcode, 1, sizeof(endcode), f); //add sequence end code to have a real mpeg file 
 	fclose(f);
 	vedio.ffmpegEncoderClose();
-    if (vedio.getFrameNumber() == vedio.frameToStop) {
+    if (!progressForm->process_stop) {
         string temp = "ffmpeg -i " + inputfile + " -vn -acodec pcm_s16le temp.wav";
         system(temp.c_str());    //
         temp = "ffmpeg -i temp.h264 -i temp.wav -vcodec copy -acodec copy " + outputfile;
@@ -129,7 +134,7 @@ Void watermarkUI::MyForm::embed_start(VideoWatermark& vedio) {
         //system("del temp.h264");
         system("del temp.wav");
     }
-    
+    vedio.dontDisplay();
 	progressForm->Close();
 	std::cout << vedio.getFrameNumber() << std::endl;
 	std::cout << vedio.getPositionMS() << std::endl;
@@ -147,13 +152,9 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
     int frame_rate = vedio.getFrameRate();
 	vedio.displayInput("Current Frame");
 	vedio.setDelay(1000. / vedio.getFrameRate());// Play the video at the original frame rate
-	vector<vector<int>> watermark_accumulation(64, vector<int>(64,0));
+	vector<vector<int>> watermark_accumulation(WATERMARK_WIDTH, vector<int>(WATERMARK_HEIGHT,0));
     string watermark_path = static_cast<const char*>(Marshal::StringToHGlobalAnsi(embeddedwatermark_text->Text).ToPointer());
-    cv::Mat watermark_img(64,64, CV_8UC1,255);
-    if (watermark_path != "") {
-        watermark_img = cv::imread(watermark_path, 0);
-        threshold(watermark_img, watermark_img, 240, 255, CV_THRESH_BINARY);
-    }   
+    cv::Mat watermark_img(WATERMARK_HEIGHT, WATERMARK_WIDTH, CV_8UC1,255); 
     // Tesseract OCR API
     tesseract::TessBaseAPI tess;
     printf("Tesseract-ocr version: %s\n", tess.Version());
@@ -178,8 +179,7 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
     vedio.readNextFrame(pre_first); //read the first frame
     vedio.readNextFrame(pre_second); //read the second frame
 	vedio.readNextFrame(pre_frame); //read the third frame
-	IplImage* img = &IplImage(pre_frame);
-	vedio.readNextFrame(cur_frame); //read the first frame
+	vedio.readNextFrame(cur_frame); //read the fouth frame
 	vedio.fnumber = 1;
 	cv::Mat pre_hist = GetHistValue(pre_frame);
 	cv::Mat cur_hist = GetHistValue(cur_frame);
@@ -200,7 +200,7 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
 		if (next_shotDiff.val[0] - pre_shotDiff.val[0]>1)
 		{
 			double nc = 0;
-            if(frame_rate>47)
+            if(frame_rate>37)
 			    absdiff(pre_second, cur_frame, output_frame);
             else absdiff(pre_frame, cur_frame, output_frame);
 			//cur_frame = pre_frame.clone();
@@ -286,6 +286,7 @@ Void watermarkUI::MyForm::detect_start(VideoWatermark& vedio) {
 	outfile.close();
 	progressForm->Close();
     tess.Clear();
+    vedio.dontDisplay();
     tess.End();
 	std::cout << vedio.getFrameNumber() << std::endl;
 	std::cout << vedio.getPositionMS() << std::endl;
@@ -317,14 +318,7 @@ Void watermarkUI::MyForm::outputbutton_Click(System::Object^  sender, System::Ev
 		outputfiletext->Text = saveFileDialog1->FileName;
 	}																			   ////fs输出带文字或图片的文件，就看需求了 
 }
-Void watermarkUI::MyForm::loadimage_Click(System::Object^  sender, System::EventArgs^  e) {
-	openFileDialog2->FileName = "";
-	if (openFileDialog2->ShowDialog() == System::Windows::Forms::DialogResult::OK)
-	{
-		watermark_pic->ImageLocation = openFileDialog2->FileName;
 
-	}
-}
 Void watermarkUI::MyForm::detectfilebutton_Click(System::Object^  sender, System::EventArgs^  e) {
 	openFileDialog3->FileName = "";
 	if (openFileDialog3->ShowDialog() == System::Windows::Forms::DialogResult::OK)

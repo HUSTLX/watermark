@@ -397,6 +397,8 @@ class VideoWatermark {
 };
 cv::Mat GetHistValue(const cv::Mat image);
 cv::Scalar getMSSIM(const cv::Mat& i1, const cv::Mat& i2);
+cv::Mat generateWatermark(std::string text);
+
 #ifndef MKTAG
 #define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
 #endif

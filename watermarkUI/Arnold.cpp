@@ -48,12 +48,9 @@ void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr
 {
     int image_height = image.rows;
 	int image_width = image.cols;
-	
-	int watermark_height = watermark.rows;
-	int watermark_width = watermark.cols;
-    const int kEmbedNumPerBlock = image_height * image_width / (watermark_height * watermark_width * EMBED_RATE);
-	double step_height = static_cast<double>(image_height) / watermark_height;
-	double step_width = static_cast<double>(image_width) / watermark_width;
+    const int kEmbedNumPerBlock = image_height * image_width / (WATERMARK_HEIGHT * WATERMARK_WIDTH * EMBED_RATE);
+	double step_height = static_cast<double>(image_height) / WATERMARK_HEIGHT;
+	double step_width = static_cast<double>(image_width) / WATERMARK_WIDTH;
 	int block_height = floor(step_height);
 	int block_width = floor(step_width);
 	//std::cout << "watermark_height" << watermark_height << "block_height" << block_height << std::endl;
@@ -62,9 +59,9 @@ void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr
 	static std::uniform_int_distribution<unsigned> u(0, rand_max);
 	int embed_x, embed_y;
 	double mes,embed_count = 0;
-	for (int i = 0; i < watermark_height; i++)
+	for (int i = 0; i < WATERMARK_HEIGHT; i++)
 	{
-		for (int j = 0; j < watermark_width; j++)
+		for (int j = 0; j < WATERMARK_WIDTH; j++)
 		{
 			//std::cout << "i" << i << "j" << j << std::endl;
 			if (watermark.at<uchar>(i, j) > 0)
@@ -91,7 +88,7 @@ void ArnoldEmbedWatermark(cv::Mat& image, const cv::Mat& watermark, double &psnr
 	psnr = 20 * log10(255/sqrt(mes));
 	//std::cout << embed_count << std::endl;
 }
-void ArnoldDetectWatermark(cv::Mat& image, cv::Mat& detect_watermark, double &nc)
+void ArnoldDetectWatermark(cv::Mat& image, cv::Mat& detect_watermark, double &ber)
 {
     double sum1 = 0, sum2 = 0, sum3 = 0;
     cv::Mat watermark = detect_watermark.clone();
@@ -131,14 +128,14 @@ void ArnoldDetectWatermark(cv::Mat& image, cv::Mat& detect_watermark, double &nc
     int watermark_width = right-left;
     int watermark_height = below-up;*/
 
-    const int kEmbedNumPerBlock = height * width / (64 * 64 * EMBED_RATE);
-    double step_height = static_cast<double>(height) / 64;
-    double step_width = static_cast<double>(width) / 64;
+    const int kEmbedNumPerBlock = height * width / (WATERMARK_HEIGHT * WATERMARK_WIDTH * EMBED_RATE);
+    double step_height = static_cast<double>(height) / WATERMARK_HEIGHT;
+    double step_width = static_cast<double>(width) / WATERMARK_WIDTH;
     int block_height = floor(step_height);
     int block_width = floor(step_width);
-    for (int i = 0; i < 64; i++)
+    for (int i = 0; i < WATERMARK_HEIGHT; i++)
     {
-        for (int j = 0; j < 64; j++)
+        for (int j = 0; j < WATERMARK_WIDTH; j++)
         {
             cv::Rect rect(floor(j*step_width), floor(i*step_height), block_width, block_height);
             cv::Mat roi = image(rect);
@@ -166,5 +163,5 @@ void ArnoldDetectWatermark(cv::Mat& image, cv::Mat& detect_watermark, double &nc
         }    
     }
     
-    nc = sum1 / (sum2 + 64 * 64);
+    ber = sum1 / (sum2 + WATERMARK_HEIGHT * WATERMARK_WIDTH);
 }

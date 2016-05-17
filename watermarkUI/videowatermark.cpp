@@ -182,4 +182,24 @@ Scalar getMSSIM(const Mat& i1, const Mat& i2)
 	Scalar mssim = mean(ssim_map); // mssim = average of ssim map
 	return mssim;
 }
-
+cv::Mat generateWatermark(string text) {
+    cv::Mat image = Mat(WATERMARK_HEIGHT, WATERMARK_WIDTH, CV_8UC1, 255);
+    transform(text.begin(), text.end(), text.begin(), toupper);
+    string text1 = "",text2="";
+    text1 = text.substr(0, min(6,text.size()));
+    if (text.size() > 6) text2= text.substr(6);
+    putText(image,
+        text1,
+        { 6,28 },//	left,Bottom corner of the text string in the image.
+        FONT_HERSHEY_DUPLEX,//Font type  FONT_HERSHEY_SIMPLEX 	        
+        1,//Font scale factor that is multiplied by the font-specific base size.
+        0,//Text color.
+        2,//Thickness of the lines used to draw a text.
+        LINE_4,//Line type. See the line for detailAs.
+        false//When true, the image data origin is at the bottom-left corner. Otherwise, it is at the top-left corner.
+        );
+    putText(image, text2, { 6,55 }, FONT_HERSHEY_DUPLEX, 1, 0, 2, LINE_4, false);
+    //imshow("white", image);
+    imwrite("watermark.bmp", image);
+    return image;
+}

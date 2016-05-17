@@ -62,8 +62,8 @@ namespace watermarkUI {
 	private: System::Windows::Forms::TabControl^  tabControl2;
 	private: System::Windows::Forms::TabPage^  Arnold_tab;
 	private: System::Windows::Forms::Button^  arnoldstart;
-	private: System::Windows::Forms::PictureBox^  watermark_pic;
-	private: System::Windows::Forms::Button^  loadimage;
+
+
 	private: System::Windows::Forms::OpenFileDialog^  openFileDialog2;
 	private: System::Windows::Forms::Label^  label1;
 	private: System::Windows::Forms::Button^  detectfilebutton;
@@ -86,7 +86,9 @@ namespace watermarkUI {
 	private: System::Windows::Forms::TextBox^  embeddedwatermark_text;
 	private: System::Windows::Forms::Label^  embeddedwatermark_label;
 	private: System::Windows::Forms::OpenFileDialog^  openFileDialog4;
-	private:
+    private: System::Windows::Forms::TextBox^  watermark_text;
+
+    private:
 		/// <summary>
 		/// 必需的设计器变量。
 		/// </summary>
@@ -102,11 +104,10 @@ namespace watermarkUI {
             System::ComponentModel::ComponentResourceManager^  resources = (gcnew System::ComponentModel::ComponentResourceManager(MyForm::typeid));
             this->tabControl1 = (gcnew System::Windows::Forms::TabControl());
             this->Embed_tab = (gcnew System::Windows::Forms::TabPage());
+            this->watermark_text = (gcnew System::Windows::Forms::TextBox());
             this->PSNR_text = (gcnew System::Windows::Forms::TextBox());
             this->PSNR_label = (gcnew System::Windows::Forms::Label());
             this->label1 = (gcnew System::Windows::Forms::Label());
-            this->watermark_pic = (gcnew System::Windows::Forms::PictureBox());
-            this->loadimage = (gcnew System::Windows::Forms::Button());
             this->tabControl2 = (gcnew System::Windows::Forms::TabControl());
             this->Arnold_tab = (gcnew System::Windows::Forms::TabPage());
             this->arnoldstart = (gcnew System::Windows::Forms::Button());
@@ -140,7 +141,6 @@ namespace watermarkUI {
             this->openFileDialog4 = (gcnew System::Windows::Forms::OpenFileDialog());
             this->tabControl1->SuspendLayout();
             this->Embed_tab->SuspendLayout();
-            (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->watermark_pic))->BeginInit();
             this->tabControl2->SuspendLayout();
             this->Arnold_tab->SuspendLayout();
             this->Detect_tab->SuspendLayout();
@@ -169,11 +169,10 @@ namespace watermarkUI {
             // 
             this->Embed_tab->BackColor = System::Drawing::Color::White;
             this->Embed_tab->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+            this->Embed_tab->Controls->Add(this->watermark_text);
             this->Embed_tab->Controls->Add(this->PSNR_text);
             this->Embed_tab->Controls->Add(this->PSNR_label);
             this->Embed_tab->Controls->Add(this->label1);
-            this->Embed_tab->Controls->Add(this->watermark_pic);
-            this->Embed_tab->Controls->Add(this->loadimage);
             this->Embed_tab->Controls->Add(this->tabControl2);
             this->Embed_tab->Controls->Add(this->outputbutton);
             this->Embed_tab->Controls->Add(this->outputfiletext);
@@ -188,6 +187,13 @@ namespace watermarkUI {
             this->Embed_tab->Size = System::Drawing::Size(656, 425);
             this->Embed_tab->TabIndex = 0;
             this->Embed_tab->Text = L"嵌入";
+            // 
+            // watermark_text
+            // 
+            this->watermark_text->Location = System::Drawing::Point(55, 253);
+            this->watermark_text->Name = L"watermark_text";
+            this->watermark_text->Size = System::Drawing::Size(173, 30);
+            this->watermark_text->TabIndex = 16;
             // 
             // PSNR_text
             // 
@@ -213,27 +219,6 @@ namespace watermarkUI {
             this->label1->Size = System::Drawing::Size(50, 22);
             this->label1->TabIndex = 13;
             this->label1->Text = L"水印";
-            // 
-            // watermark_pic
-            // 
-            this->watermark_pic->BackgroundImageLayout = System::Windows::Forms::ImageLayout::Stretch;
-            this->watermark_pic->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-            this->watermark_pic->Location = System::Drawing::Point(164, 235);
-            this->watermark_pic->Name = L"watermark_pic";
-            this->watermark_pic->Size = System::Drawing::Size(64, 64);
-            this->watermark_pic->SizeMode = System::Windows::Forms::PictureBoxSizeMode::StretchImage;
-            this->watermark_pic->TabIndex = 12;
-            this->watermark_pic->TabStop = false;
-            // 
-            // loadimage
-            // 
-            this->loadimage->Location = System::Drawing::Point(53, 245);
-            this->loadimage->Name = L"loadimage";
-            this->loadimage->Size = System::Drawing::Size(58, 38);
-            this->loadimage->TabIndex = 11;
-            this->loadimage->Text = L"加载";
-            this->loadimage->UseVisualStyleBackColor = true;
-            this->loadimage->Click += gcnew System::EventHandler(this, &MyForm::loadimage_Click);
             // 
             // tabControl2
             // 
@@ -404,7 +389,7 @@ namespace watermarkUI {
             // accumulation_label
             // 
             this->accumulation_label->AutoSize = true;
-            this->accumulation_label->Location = System::Drawing::Point(140, 327);
+            this->accumulation_label->Location = System::Drawing::Point(184, 327);
             this->accumulation_label->Name = L"accumulation_label";
             this->accumulation_label->Size = System::Drawing::Size(50, 22);
             this->accumulation_label->TabIndex = 8;
@@ -422,9 +407,9 @@ namespace watermarkUI {
             // final_watermark
             // 
             this->final_watermark->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-            this->final_watermark->Location = System::Drawing::Point(140, 236);
+            this->final_watermark->Location = System::Drawing::Point(184, 236);
             this->final_watermark->Name = L"final_watermark";
-            this->final_watermark->Size = System::Drawing::Size(64, 64);
+            this->final_watermark->Size = System::Drawing::Size(128, 64);
             this->final_watermark->TabIndex = 6;
             this->final_watermark->TabStop = false;
             // 
@@ -463,7 +448,7 @@ namespace watermarkUI {
             this->detect_watermark->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
             this->detect_watermark->Location = System::Drawing::Point(34, 236);
             this->detect_watermark->Name = L"detect_watermark";
-            this->detect_watermark->Size = System::Drawing::Size(64, 64);
+            this->detect_watermark->Size = System::Drawing::Size(128, 64);
             this->detect_watermark->TabIndex = 4;
             this->detect_watermark->TabStop = false;
             // 
@@ -537,7 +522,6 @@ namespace watermarkUI {
             this->tabControl1->ResumeLayout(false);
             this->Embed_tab->ResumeLayout(false);
             this->Embed_tab->PerformLayout();
-            (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->watermark_pic))->EndInit();
             this->tabControl2->ResumeLayout(false);
             this->Arnold_tab->ResumeLayout(false);
             this->Detect_tab->ResumeLayout(false);
@@ -556,8 +540,6 @@ private: System::Void outputbutton_Click(System::Object^  sender, System::EventA
 private: System::Void inputbutton_Click(System::Object^  sender, System::EventArgs^  e);
 		 //用Arnold算法开始嵌入水印
 private: System::Void arnoldstart_Click(System::Object^  sender, System::EventArgs^  e);
-		 //加载要嵌入的水印图像
-private: System::Void loadimage_Click(System::Object^  sender, System::EventArgs^  e);
 		 //解码视频开始嵌入水印并编码
 public: void embed_start(VideoWatermark& processor);
 		 //解码视频检测水印
@@ -568,6 +550,7 @@ private: System::Void detectfilebutton_Click(System::Object^  sender, System::Ev
 private: System::Void detect_arnoldbutton_Click(System::Object^  sender, System::EventArgs^  e);
 		 //加载嵌入视频的原始水印图像用于计算SSIM
 private: System::Void embeddedwatermark_button_Click(System::Object^  sender, System::EventArgs^  e);
+
 };
 }
 #endif
